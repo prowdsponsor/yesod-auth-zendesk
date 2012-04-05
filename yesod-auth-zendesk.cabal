@@ -39,14 +39,25 @@ Library
   else
     Build-depends: base         >= 4       && < 4.3
 
-  Build-depends:   yesod-core   >= 0.10    && < 0.11
+  Build-depends:   time         >= 1.1     && < 2
+                 , text         >= 0.7     && < 0.12
+                 , data-default >= 0.2     && < 0.5
+                 , template-haskell
+                 , yesod-core   >= 0.10    && < 0.11
                  , yesod-auth   >= 0.8     && < 0.9
                  , wai
                  , http-conduit
-                 , text         >= 0.7     && < 0.12
                  , transformers >= 0.1.3   && < 0.3
 
   Exposed-modules: Yesod.Auth.Zendesk
-  Extensions: GADTs QuasiQuotes CPP OverloadedStrings
+  Extensions:
+    CPP
+    FlexibleInstances
+    GADTs
+    MultiParamTypeClasses
+    OverloadedStrings
+    QuasiQuotes
+    TemplateHaskell
+    TypeFamilies
   GHC-options: -Wall
   Include-dirs: include
