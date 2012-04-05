@@ -3,10 +3,11 @@ module Yesod.Auth.Zendesk
     , ZendeskUser(..)
     , Zendesk
     , getZendesk
-    , redirectToZendesk
+    , zendeskLoginRoute
     ) where
 
 #include "qq.h"
+import Control.Applicative ((<$>))
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Default (Default(..))
 import Data.Text (Text)
@@ -140,30 +141,42 @@ mkYesodSub "Zendesk"
 |]
 
 
--- | Route used by Zendesk remote authentication.  We expect to
--- receive a timestamp from Zendesk.
-getZendeskLoginR :: YesodZendesk master => GHandler Zendesk master ()
-getZendeskLoginR = internalRedirectToZendesk . reqGetParams =<< getRequest
-
-
-----------------------------------------------------------------------
-
-
 -- | Redirect the user to Zendesk such that they're already
 -- logged in when they arrive.  For example, you may use
--- @redirectToZendesk@ when the user clicks on a
-redirectToZendesk :: YesodZendesk master => GHandler Zendesk master ()
-redirectToZendesk = do
-  now <- liftIO getCurrentTime
-  let timestamp = T.pack $ formatTime locale "%s" now
-      locale = error "redirectToZendesk: never here (locale not needed)"
-  internalRedirectToZendesk [("timestamp", timestamp)]
+-- @zendeskLoginRoute@ when the user clicks on a \"Support\" item
+-- on a menu.
+zendeskLoginRoute :: Route Zendesk
+zendeskLoginRoute = ZendeskLoginR
 
 
--- | Internal function parametrized by the timestamp.
-internalRedirectToZendesk :: YesodZendesk master =>
-                             [(Text, Text)] -- ^ Request GET params.
-                          -> GHandler Zendesk master ()
-internalRedirectToZendesk params = do
+-- | Route used by the Zendesk remote authentication.  Works both
+-- when Zendesk call us and when we call them.
+getZendeskLoginR :: YesodZendesk master => GHandler Zendesk master ()
+getZendeskLoginR = do
+  -- Get the timestamp and the request params.
+  (timestamp, getParams) <- do
+    mtimestamp <- lookupGetParam "timestamp"
+    case mtimestamp of
+      Nothing -> do
+        -- Doesn't seem to be a request from Zendesk, create our
+        -- own timestamp.
+        now <- liftIO getCurrentTime
+        let timestamp = T.pack $ formatTime locale "%s" now
+            locale = error "yesod-auth-zendesk: never here (locale not needed)"
+        return (timestamp, [("timestamp", timestamp)])
+      Just timestamp ->
+        -- Seems to be a request from Zendesk.
+        --
+        -- They ask us to reply to them with all the request
+        -- parameters they gave us, and at first it seems that
+        -- this could create a security problem: we can't confirm
+        -- that the request really came from Zendesk, and a
+        -- malicious person could include a parameter such as
+        -- "email=foo@bar.com".  These attacks would foiled by
+        -- the hash, however.
+        (,) timestamp . reqGetParams <$> getRequest
+
+  -- Get information about the currently logged user.
   userInfo <- zendeskUserInfo
+
   undefined
