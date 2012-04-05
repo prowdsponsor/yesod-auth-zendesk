@@ -43,6 +43,8 @@ Library
                  , text         >= 0.7     && < 0.12
                  , data-default >= 0.2     && < 0.5
                  , template-haskell
+                 , cryptohash   >= 0.6
+                 , base16-bytestring
                  , yesod-core   >= 0.10    && < 0.11
                  , yesod-auth   >= 0.8     && < 0.9
                  , wai
@@ -57,6 +59,7 @@ Library
     MultiParamTypeClasses
     OverloadedStrings
     QuasiQuotes
+    RecordWildCards
     TemplateHaskell
     TypeFamilies
   GHC-options: -Wall

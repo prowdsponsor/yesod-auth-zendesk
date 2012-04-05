@@ -10,12 +10,16 @@ module Yesod.Auth.Zendesk
 import Control.Applicative ((<$>))
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Default (Default(..))
+import Data.List (intersperse)
 import Data.Text (Text)
 import Data.Time (getCurrentTime, formatTime)
 import Language.Haskell.TH.Syntax (Pred(ClassP), Type(VarT), mkName)
 import Yesod.Auth
 import Yesod.Core
+import qualified Crypto.Hash.MD5 as MD5
+import qualified Data.ByteString.Base16 as Base16
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
 
 
 -- | Type class that you need to implement in order to support
@@ -177,6 +181,26 @@ getZendeskLoginR = do
         (,) timestamp . reqGetParams <$> getRequest
 
   -- Get information about the currently logged user.
-  userInfo <- zendeskUserInfo
+  ZendeskUser {..} <- zendeskUserInfo
+  externalId <- case zuExternalId of
+                  UseYesodAuthId -> Just . toPathPiece <$> requireAuthId
+                  Explicit x     -> return (Just x)
+                  NoExternalId   -> return Nothing
+  let tags = T.concat $ intersperse "," zuTags
+
+  -- Calculate hash
+  y <- getYesod
+  let hash =
+        let toBeHashed = T.concat .  (:)  zuName
+                                  .  (:)  zuEmail
+                                  . mcons externalId
+                                  . mcons zuOrganization
+                                  .  (:)  tags
+                                  . mcons zuRemotePhotoURL
+                                  .  (:)  (zendeskToken y)
+                                  .  (:)  timestamp
+                                  $[]
+            mcons = maybe id (:)
+        in Base16.encode $ MD5.hash $ TE.encodeUtf8 toBeHashed
 
   undefined
