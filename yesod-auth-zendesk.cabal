@@ -1,0 +1,52 @@
+Name:                yesod-auth-zendesk
+Version:             0.1
+Synopsis:            Zendesk remote authentication support for Yesod apps.
+Homepage:            https://github.com/meteficha/yesod-auth-zendesk
+License:             BSD3
+License-file:        LICENSE
+Author:              Felipe Lessa
+Maintainer:          Felipe Lessa <felipe.lessa@gmail.com>
+Category:            Web
+Build-type:          Simple
+Cabal-version:       >= 1.6
+Extra-source-files:  include/qq.h
+
+Description:
+  This package allows users of your website to login into Zendesk
+  automatically using Zendesk's remote authentication
+  (<http://www.zendesk.com/support/api/remote-authentication>).
+  .
+  Note that this is an unusual @yesod-auth-*@ package.  We do not
+  define an @AuthPlugin@ because the user can't log in to your
+  website via Zendesk (it's the opposite, they login in Zendesk
+  via your website).  Instead, this plugin defines an Yesod
+  subsite that you may include on your site; the subsite defines
+  a route that accepts incoming users from Zendesk and
+  authenticates them.
+
+Source-repository head
+  type:     git
+  location: git://github.com/meteficha/yesod-auth-zendesk.git
+
+flag ghc7
+
+Library
+  hs-source-dirs: src
+
+  if flag(ghc7)
+    Cpp-options:   -DGHC7
+    Build-depends: base         >= 4.3     && < 5
+  else
+    Build-depends: base         >= 4       && < 4.3
+
+  Build-depends:   yesod-core   >= 0.10    && < 0.11
+                 , yesod-auth   >= 0.8     && < 0.9
+                 , wai
+                 , http-conduit
+                 , text         >= 0.7     && < 0.12
+                 , transformers >= 0.1.3   && < 0.3
+
+  Exposed-modules: Yesod.Auth.Zendesk
+  Extensions: GADTs QuasiQuotes CPP OverloadedStrings
+  GHC-options: -Wall
+  Include-dirs: include
