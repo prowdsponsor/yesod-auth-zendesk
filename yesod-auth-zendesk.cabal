@@ -9,7 +9,6 @@ Maintainer:          Felipe Lessa <felipe.lessa@gmail.com>
 Category:            Web
 Build-type:          Simple
 Cabal-version:       >= 1.6
-Extra-source-files:  include/qq.h
 
 Description:
   This package allows users of your website to login into Zendesk
@@ -28,18 +27,11 @@ Source-repository head
   type:     git
   location: git://github.com/meteficha/yesod-auth-zendesk.git
 
-flag ghc7
-
 Library
   hs-source-dirs: src
 
-  if flag(ghc7)
-    Cpp-options:   -DGHC7
-    Build-depends: base         >= 4.3     && < 5
-  else
-    Build-depends: base         >= 4       && < 4.3
-
-  Build-depends:   time         >= 1.1     && < 2
+  Build-depends:   base         >= 4.3     && < 5
+                 , time         >= 1.1     && < 2
                  , text         >= 0.7     && < 0.12
                  , data-default >= 0.2     && < 0.5
                  , template-haskell
@@ -53,7 +45,6 @@ Library
 
   Exposed-modules: Yesod.Auth.Zendesk
   Extensions:
-    CPP
     FlexibleInstances
     GADTs
     MultiParamTypeClasses

@@ -6,7 +6,6 @@ module Yesod.Auth.Zendesk
     , zendeskLoginRoute
     ) where
 
-#include "qq.h"
 import Control.Applicative ((<$>))
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Default (Default(..))
@@ -140,7 +139,7 @@ getZendesk = const Zendesk
 
 mkYesodSub "Zendesk"
   [ClassP ''YesodZendesk [VarT $ mkName "master"]]
-  [QQ(parseRoutes)|
+  [parseRoutes|
   / ZendeskLoginR GET
 |]
 
