@@ -19,6 +19,7 @@ import Yesod.Auth
 import Yesod.Core
 import qualified Crypto.Hash.MD5 as MD5
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Base16 as Base16
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
@@ -31,7 +32,7 @@ import qualified Network.HTTP.Types as H
 -- /Minimal complete definition:/ all functions are required.
 class YesodAuth master => YesodZendesk master where
   -- | Shared secret between Zendesk and your site.
-  zendeskToken :: master -> Text
+  zendeskToken :: master -> B.ByteString
 
   -- | URL on your Zendesk's site where users should be
   -- redirected to when logging in.
@@ -168,10 +169,10 @@ getZendeskLoginR = do
         -- Doesn't seem to be a request from Zendesk, create our
         -- own timestamp.
         now <- liftIO getCurrentTime
-        let timestamp = T.pack $ formatTime locale "%s" now
+        let timestamp = B8.pack $ formatTime locale "%s" now
             locale = error "yesod-auth-zendesk: never here (locale not needed)"
-        return (timestamp, [("timestamp", timestamp)])
-      Just timestamp ->
+        return (timestamp, [("timestamp", Just timestamp)])
+      Just timestamp -> do
         -- Seems to be a request from Zendesk.
         --
         -- They ask us to reply to them with all the request
@@ -181,7 +182,9 @@ getZendeskLoginR = do
         -- malicious person could include a parameter such as
         -- "email=foo@bar.com".  These attacks would foiled by
         -- the hash, however.
-        (,) timestamp . reqGetParams <$> getRequest
+        paramsT <- reqGetParams <$> getRequest
+        let paramsBS = H.queryTextToQuery $ map (second Just) paramsT
+        return (TE.encodeUtf8 timestamp, paramsBS)
 
   -- Get information about the currently logged user.
   ZendeskUser {..} <- zendeskUserInfo
@@ -194,17 +197,18 @@ getZendeskLoginR = do
   -- Calculate hash
   y <- getYesod
   let hash =
-        let toBeHashed = T.concat .  (:)  zuName
-                                  .  (:)  zuEmail
+        let toBeHashed = B.concat .  cons zuName
+                                  .  cons zuEmail
                                   . mcons externalId
                                   . mcons zuOrganization
-                                  .  (:)  tags
+                                  .  cons tags
                                   . mcons zuRemotePhotoURL
                                   .  (:)  (zendeskToken y)
                                   .  (:)  timestamp
                                   $[]
-            mcons = maybe id (:)
-        in Base16.encode $ MD5.hash $ TE.encodeUtf8 toBeHashed
+            cons  = (:) . TE.encodeUtf8
+            mcons = maybe id cons
+        in Base16.encode $ MD5.hash toBeHashed
 
   -- Encode information into parameters
   let addParams = paramT  "name"             (Just zuName)
@@ -219,9 +223,7 @@ getZendeskLoginR = do
           paramBS name (Just t) | not (B.null t) = (:) (name, Just t)
           paramBS _    _                         = id
       params = H.renderQuery True {- add question mark -} $
-               addParams $
-               H.queryTextToQuery $
-               map (second Just) getParams
+               addParams getParams
 
   -- Redirect to Zendesk
   redirect $ zendeskAuthURL y <> TE.decodeUtf8 params
