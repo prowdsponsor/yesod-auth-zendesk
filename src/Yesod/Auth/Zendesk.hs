@@ -1,6 +1,7 @@
 module Yesod.Auth.Zendesk
     ( YesodZendesk(..)
     , ZendeskUser(..)
+    , ZendeskExternalId(..)
     , Zendesk
     , getZendesk
     , zendeskLoginRoute
