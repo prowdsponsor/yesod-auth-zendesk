@@ -50,7 +50,7 @@ class YesodAuth master => YesodZendesk master where
   -- zendeskUserInfo = do
   --   Entity uid user <- 'requireAuth'
   --   return 'def' { 'zuName'  = userName user
-  --                , 'zuEmail' = userEmail user }
+  --              , 'zuEmail' = userEmail user }
   -- @
   --
   -- Advanced example:
@@ -58,15 +58,13 @@ class YesodAuth master => YesodZendesk master where
   -- @
   -- zendeskUserInfo = do
   --   uid <- 'requireAuthId'
-  --   (user, org) <-
-  --     runDB $ do
-  --       Just user <- get uid
-  --       Just org  <- get (userOrganization user)
-  --       return (user, org)
   --   render <- 'getUrlRender'
-  --   return 'def' { 'zuName'  = userName user
-  --                , 'zuEmail' = userEmail user
-  --                , 'zuOrganization' = Just (organizationName org)
+  --   runDB $ do
+  --     Just user <- get uid
+  --     Just org  <- get (userOrganization user)
+  --     return 'def' { 'zuName'           = userName user
+  --                , 'zuEmail'          = userEmail user
+  --                , 'zuOrganization'   = Just (organizationName org)
   --                , 'zuRemotePhotoURL' = Just (render $ UserPhotoR uid)
   --                }
   -- @
