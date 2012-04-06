@@ -7,7 +7,7 @@ module Yesod.Auth.Zendesk
     ) where
 
 import Control.Applicative ((<$>))
-import Control.Arrow (second)
+import Control.Monad (join)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Default (Default(..))
 import Data.List (intersperse)
@@ -24,6 +24,7 @@ import qualified Data.ByteString.Base16 as Base16
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import qualified Network.HTTP.Types as H
+import qualified Network.Wai as W
 
 
 -- | Type class that you need to implement in order to support
@@ -163,8 +164,8 @@ getZendeskLoginR :: YesodZendesk master => GHandler Zendesk master ()
 getZendeskLoginR = do
   -- Get the timestamp and the request params.
   (timestamp, getParams) <- do
-    mtimestamp <- lookupGetParam "timestamp"
-    case mtimestamp of
+    rawReqParams <- W.queryString <$> waiRequest
+    case join $ lookup "timestamp" rawReqParams of
       Nothing -> do
         -- Doesn't seem to be a request from Zendesk, create our
         -- own timestamp.
@@ -172,7 +173,7 @@ getZendeskLoginR = do
         let timestamp = B8.pack $ formatTime locale "%s" now
             locale = error "yesod-auth-zendesk: never here (locale not needed)"
         return (timestamp, [("timestamp", Just timestamp)])
-      Just timestamp -> do
+      Just timestamp ->
         -- Seems to be a request from Zendesk.
         --
         -- They ask us to reply to them with all the request
@@ -182,9 +183,7 @@ getZendeskLoginR = do
         -- malicious person could include a parameter such as
         -- "email=foo@bar.com".  These attacks would foiled by
         -- the hash, however.
-        paramsT <- reqGetParams <$> getRequest
-        let paramsBS = H.queryTextToQuery $ map (second Just) paramsT
-        return (TE.encodeUtf8 timestamp, paramsBS)
+        return (timestamp, rawReqParams)
 
   -- Get information about the currently logged user.
   ZendeskUser {..} <- zendeskUserInfo
