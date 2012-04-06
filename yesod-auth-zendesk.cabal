@@ -32,11 +32,13 @@ Library
 
   Build-depends:   base         >= 4.3     && < 5
                  , time         >= 1.1     && < 2
+                 , bytestring
                  , text         >= 0.7     && < 0.12
                  , data-default >= 0.2     && < 0.5
                  , template-haskell
                  , cryptohash   >= 0.6
                  , base16-bytestring
+                 , http-types
                  , yesod-core   >= 0.10    && < 0.11
                  , yesod-auth   >= 0.8     && < 0.9
                  , wai

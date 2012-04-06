@@ -7,18 +7,22 @@ module Yesod.Auth.Zendesk
     ) where
 
 import Control.Applicative ((<$>))
+import Control.Arrow (second)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Default (Default(..))
 import Data.List (intersperse)
+import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Time (getCurrentTime, formatTime)
 import Language.Haskell.TH.Syntax (Pred(ClassP), Type(VarT), mkName)
 import Yesod.Auth
 import Yesod.Core
 import qualified Crypto.Hash.MD5 as MD5
+import qualified Data.ByteString as B
 import qualified Data.ByteString.Base16 as Base16
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
+import qualified Network.HTTP.Types as H
 
 
 -- | Type class that you need to implement in order to support
@@ -202,4 +206,22 @@ getZendeskLoginR = do
             mcons = maybe id (:)
         in Base16.encode $ MD5.hash $ TE.encodeUtf8 toBeHashed
 
-  undefined
+  -- Encode information into parameters
+  let addParams = paramT  "name"             (Just zuName)
+                . paramT  "email"            (Just zuEmail)
+                . paramBS "hash"             (Just hash)
+                . paramT  "external_id"      externalId
+                . paramT  "organization"     zuOrganization
+                . paramT  "tags"             (Just tags)
+                . paramT  "remote_photo_url" zuRemotePhotoURL
+        where
+          paramT name = paramBS name . fmap TE.encodeUtf8
+          paramBS name (Just t) | not (B.null t) = (:) (name, Just t)
+          paramBS _    _                         = id
+      params = H.renderQuery True {- add question mark -} $
+               addParams $
+               H.queryTextToQuery $
+               map (second Just) getParams
+
+  -- Redirect to Zendesk
+  redirect $ zendeskAuthURL y <> TE.decodeUtf8 params
