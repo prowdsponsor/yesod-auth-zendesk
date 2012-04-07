@@ -12,7 +12,6 @@ import Control.Monad (join)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Default (Default(..))
 import Data.List (intersperse)
-import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Time (getCurrentTime, formatTime)
 import Language.Haskell.TH.Syntax (Pred(ClassP), Type(VarT), mkName)
@@ -224,4 +223,4 @@ getZendeskLoginR = do
                addParams getParams
 
   -- Redirect to Zendesk
-  redirect $ zendeskAuthURL y <> TE.decodeUtf8 params
+  redirect $ zendeskAuthURL y `T.append` TE.decodeUtf8 params
