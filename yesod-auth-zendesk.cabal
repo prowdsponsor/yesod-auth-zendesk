@@ -6,7 +6,7 @@ License:             BSD3
 License-file:        LICENSE
 Author:              Felipe Lessa
 Maintainer:          Felipe Lessa <felipe.lessa@gmail.com>
-Category:            Web
+Category:            Web, Yesod
 Build-type:          Simple
 Cabal-version:       >= 1.6
 
