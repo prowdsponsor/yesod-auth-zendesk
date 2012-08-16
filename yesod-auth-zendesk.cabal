@@ -1,5 +1,5 @@
 Name:                yesod-auth-zendesk
-Version:             0.2
+Version:             1.1
 Synopsis:            Zendesk remote authentication support for Yesod apps.
 Homepage:            https://github.com/meteficha/yesod-auth-zendesk
 License:             BSD3
@@ -34,13 +34,13 @@ Library
                  , time         >= 1.1     && < 2
                  , bytestring
                  , text         >= 0.7     && < 0.12
-                 , data-default >= 0.2     && < 0.5
+                 , data-default
                  , template-haskell
                  , cryptohash   >= 0.6
                  , base16-bytestring
                  , http-types
-                 , yesod-core   == 1.0.*
-                 , yesod-auth   == 1.0.*
+                 , yesod-core   == 1.1.*
+                 , yesod-auth   == 1.1.*
                  , wai
                  , http-conduit
                  , transformers >= 0.1.3   && < 0.4
