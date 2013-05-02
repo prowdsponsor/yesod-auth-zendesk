@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Yesod.Auth.Zendesk
     ( YesodZendesk(..)
     , ZendeskUser(..)
@@ -9,12 +10,10 @@ module Yesod.Auth.Zendesk
 
 import Control.Applicative ((<$>))
 import Control.Monad (join)
-import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Default (Default(..))
 import Data.List (intersperse)
 import Data.Text (Text)
 import Data.Time (getCurrentTime, formatTime)
-import Language.Haskell.TH.Syntax (Pred(ClassP), Type(VarT), mkName)
 import Yesod.Auth
 import Yesod.Core
 import qualified Crypto.Hash.MD5 as MD5
@@ -26,18 +25,20 @@ import qualified Data.Text.Encoding as TE
 import qualified Network.HTTP.Types as H
 import qualified Network.Wai as W
 
+import Yesod.Auth.Zendesk.Data
+
 
 -- | Type class that you need to implement in order to support
 -- Zendesk remote authentication.
 --
 -- /Minimal complete definition:/ all functions are required.
-class YesodAuth master => YesodZendesk master where
+class YesodAuthPersist site => YesodZendesk site where
   -- | Shared secret between Zendesk and your site.
-  zendeskToken :: master -> B.ByteString
+  zendeskToken :: site -> B.ByteString
 
   -- | URL on your Zendesk's site where users should be
   -- redirected to when logging in.
-  zendeskAuthURL :: master -> Text
+  zendeskAuthURL :: site -> Text
 
   -- | Gather information that should be given to Zendesk about
   -- an user.  Please see 'ZendeskUser' for more information
@@ -73,7 +74,7 @@ class YesodAuth master => YesodZendesk master where
   -- 'maybeAuth' instead of 'requireAuth' and login on Zendesk
   -- with some sort of guest user should the user not be logged
   -- in.
-  zendeskUserInfo :: GHandler Zendesk master ZendeskUser
+  zendeskUserInfo :: HandlerT site IO ZendeskUser
 
 
 -- | Information about a user that is given to 'Zendesk'.  Please
@@ -132,20 +133,13 @@ instance Default ZendeskExternalId where
 ----------------------------------------------------------------------
 
 
--- | Data type for @yesod-auth-zendesk@\'s subsite.
-data Zendesk = Zendesk
-
-
 -- | Create a new 'Zendesk', use this on your @config/routes@ file.
 getZendesk :: a -> Zendesk
 getZendesk = const Zendesk
 
 
-mkYesodSub "Zendesk"
-  [ClassP ''YesodZendesk [VarT $ mkName "master"]]
-  [parseRoutes|
-  / ZendeskLoginR GET
-|]
+instance YesodZendesk site => YesodSubDispatch Zendesk (HandlerT site IO) where
+  yesodSubDispatch = $(mkYesodSubDispatch resourcesZendesk)
 
 
 -- | Redirect the user to Zendesk such that they're already
@@ -158,7 +152,7 @@ zendeskLoginRoute = ZendeskLoginR
 
 -- | Route used by the Zendesk remote authentication.  Works both
 -- when Zendesk call us and when we call them.
-getZendeskLoginR :: YesodZendesk master => GHandler Zendesk master ()
+getZendeskLoginR :: YesodZendesk site => HandlerT Zendesk (HandlerT site IO) ()
 getZendeskLoginR = do
   -- Get the timestamp and the request params.
   (timestamp, getParams) <- do
@@ -184,15 +178,15 @@ getZendeskLoginR = do
         return (timestamp, rawReqParams)
 
   -- Get information about the currently logged user.
-  ZendeskUser {..} <- zendeskUserInfo
+  ZendeskUser {..} <- lift zendeskUserInfo
   externalId <- case zuExternalId of
-                  UseYesodAuthId -> Just . toPathPiece <$> requireAuthId
+                  UseYesodAuthId -> Just . toPathPiece <$> lift requireAuthId
                   Explicit x     -> return (Just x)
                   NoExternalId   -> return Nothing
   let tags = T.concat $ intersperse "," zuTags
 
   -- Calculate hash
-  y <- getYesod
+  y <- lift getYesod
   let hash =
         let toBeHashed = B.concat .  cons zuName
                                   .  cons zuEmail
