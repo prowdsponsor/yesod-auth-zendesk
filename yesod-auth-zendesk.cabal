@@ -1,7 +1,7 @@
 Name:                yesod-auth-zendesk
-Version:             1.2
+Version:             1.2.1
 Synopsis:            Zendesk remote authentication support for Yesod apps.
-Homepage:            https://github.com/meteficha/yesod-auth-zendesk
+Homepage:            https://github.com/prowdsponsor/yesod-auth-zendesk
 License:             BSD3
 License-file:        LICENSE
 Author:              Felipe Lessa
@@ -25,7 +25,7 @@ Description:
 
 Source-repository head
   type:     git
-  location: git://github.com/meteficha/yesod-auth-zendesk.git
+  location: git://github.com/prowdsponsor/yesod-auth-zendesk.git
 
 Library
   hs-source-dirs: src
